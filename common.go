@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"os"
@@ -232,4 +234,11 @@ func GetProjectPath() string {
 		},
 	)
 	return projectPath
+}
+
+// GenerateMD5Hash 生成给定字符串的MD5哈希值
+func GenerateMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
