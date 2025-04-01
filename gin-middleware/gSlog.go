@@ -15,8 +15,6 @@ import (
 	"github.com/huabingli/go-common"
 )
 
-const StartTimeKey = "startTime"
-
 // SkipLogFunc 定义类型：用于判断是否跳过日志记录的函数
 type SkipLogFunc func(c *gin.Context) bool
 
@@ -29,7 +27,7 @@ func GSlog(skipFns ...SkipLogFunc) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// 开始计时，记录请求开始时间
-		start := common.GetStartTime(c, StartTimeKey)
+		start := common.GetStartTime(c)
 		path := c.Request.URL.Path // 获取请求的 URL 路径
 		method := c.Request.Method // 获取请求的方法（GET、POST 等）
 

@@ -23,7 +23,7 @@ func NewRequestIDMiddleware(headerKeys ...string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// 启动计时器
-		common.GetStartTime(c, StartTimeKey)
+		common.GetStartTime(c)
 
 		// 从 Header 获取 request ID
 		requestID := c.GetHeader(headerKey)

@@ -12,9 +12,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetStartTime(c *gin.Context, key string) time.Time {
-	if startTime, ok := c.Get(key); ok {
-		if startTime, ok := startTime.(time.Time); ok {
+const StartTimeKey = "startTime"
+
+func GetStartTime(c *gin.Context, keys ...string) time.Time {
+	key := StartTimeKey
+	if len(keys) > 0 {
+		key = keys[0]
+	}
+
+	if val, ok := c.Get(key); ok {
+		if startTime, ok := val.(time.Time); ok {
 			return startTime
 		}
 	}
