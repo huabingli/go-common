@@ -242,3 +242,12 @@ func GenerateMD5Hash(text string) string {
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
+
+// CopyCtxReID 复制ctx中的requestID
+func CopyCtxReID(ctx context.Context, key string) context.Context {
+	requestID := ctx.Value(key).(string)
+	if requestID == `` {
+		return ctx
+	}
+	return context.WithValue(context.Background(), key, requestID)
+}
