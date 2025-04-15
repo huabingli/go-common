@@ -155,15 +155,10 @@ func TruncateString(s string, n int) string {
 	runes := []rune(s)
 	return string(runes[:n])
 }
+func generateCallerInfo(skip int) slog.Attr {
+	funcName, file, line := getCallerInfo(skip)
 
-// ExecutionTime 计算函数执行时间
-func ExecutionTime(ctx context.Context, msg string, args ...any) func(additionalArgs ...any) {
-	start := time.Now()
-
-	// 获取调用者函数名、文件名和行号信息
-	funcName, file, line := getCallerInfo(2)
-
-	// 获取项目根目录并规范化文件路径
+	// 规范化路径
 	relativePath := filepath.Clean(file)
 	if strings.HasPrefix(relativePath, GetProjectPath()) {
 		relativePath = strings.TrimPrefix(relativePath, GetProjectPath())
@@ -171,15 +166,21 @@ func ExecutionTime(ctx context.Context, msg string, args ...any) func(additional
 	relativePath = strings.TrimLeft(relativePath, `\/`)
 	formattedSource := fmt.Sprintf("%s:%d", relativePath, line)
 
-	// 创建日志组，包含调用者信息
-	callerInfo := slog.Group(
+	return slog.Group(
 		"caller",
 		slog.String("function", funcName),
 		slog.String("file", formattedSource),
 		slog.Int("line", line),
 	)
+}
 
-	args = append(args, callerInfo)
+// ExecutionTime 计算函数执行时间
+func ExecutionTime(ctx context.Context, msg string, includeCallerInfo bool, args ...any) func(additionalArgs ...any) {
+	start := time.Now()
+
+	if includeCallerInfo {
+		args = append(args, generateCallerInfo(2))
+	}
 
 	// 记录开始执行日志
 	slog.InfoContext(ctx, fmt.Sprintf("开始执行 %s", msg), args...)
