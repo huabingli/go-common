@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -251,4 +252,12 @@ func CopyCtxReID(ctx context.Context, key string) context.Context {
 		return ctx
 	}
 	return context.WithValue(context.Background(), key, requestID)
+}
+
+// 预编译邮箱正则表达式，提高性能
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+
+// IsEmail 判断是否为邮箱
+func IsEmail(input string) bool {
+	return emailRegex.MatchString(input)
 }
