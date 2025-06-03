@@ -16,7 +16,7 @@ func InitSlog(level slog.Level, addSource, dev bool, requestIDKey string) *slog.
 	opts := slog.HandlerOptions{
 		AddSource:   addSource,
 		Level:       level,
-		ReplaceAttr: ReplaceAttr,
+		ReplaceAttr: ReplaceAttr(dev),
 	}
 
 	// var logger *slog.Logger
