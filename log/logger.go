@@ -54,13 +54,14 @@ type LoggerConfig struct {
 	Compress     bool   // 是否压缩旧日志
 	Console      bool   // 是否输出到控制台
 	RequestIDKey string
+	ErrorStack   bool // 是否输出错误的stacktrace
 }
 
 func NewLogger(cfg LoggerConfig) *slog.Logger {
 	opts := slog.HandlerOptions{
 		AddSource:   cfg.AddSource,
 		Level:       cfg.Level,
-		ReplaceAttr: ReplaceAttr,
+		ReplaceAttr: ReplaceAttr(cfg.ErrorStack),
 	}
 	var writers []io.Writer
 	// 控制台输出
