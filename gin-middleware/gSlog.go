@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/huabingli/go-common"
+	"github.com/huabingli/go-common/jsonutil"
 )
 
 // SkipLogFunc 定义类型：用于判断是否跳过日志记录的函数
@@ -28,15 +29,18 @@ func GSlog(skipFns ...SkipLogFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 开始计时，记录请求开始时间
 		start := common.GetStartTime(c)
-		path := c.Request.URL.Path // 获取请求的 URL 路径
-		method := c.Request.Method // 获取请求的方法（GET、POST 等）
 
 		if skipFn(c) {
 			c.Next()
 			return
 		}
 
+		path := c.Request.URL.Path // 获取请求的 URL 路径
+		method := c.Request.Method // 获取请求的方法（GET、POST 等）
+
 		raw := c.Request.URL.RawQuery // 获取请求的原始查询参数
+
+		fullPath := constructPath(path, raw)
 
 		c.Next() // 执行下一个中间件或最终的处理器函数
 
@@ -45,21 +49,15 @@ func GSlog(skipFns ...SkipLogFunc) gin.HandlerFunc {
 
 		status := c.Writer.Status()
 
-		attrs := buildRequestLogAttrs(c, status, method, path, raw, duration)
+		clientIp := c.ClientIP()
 
-		// 自动设置日志等级
-		level := slog.LevelInfo
-		if status >= 500 {
-			level = slog.LevelError
-		} else if status >= 400 {
-			level = slog.LevelWarn
-		}
-		//
-		summary := fmt.Sprintf("%3d %v %s %s %s", status, duration, c.ClientIP(), method, constructPath(path, raw))
+		attrs := buildRequestLogAttrs(c, status, method, path, clientIp, fullPath, duration)
+		// 构建请求摘要
+		summary := fmt.Sprintf("%3d %v %s %s %s", status, duration, clientIp, method, fullPath)
 		// 将请求信息记录到日志
 		slog.LogAttrs(
 			c.Request.Context(),
-			level, // 设置日志级别为 Debug
+			levelByStatus(status), // 设置日志级别为 Debug
 			"HTTP request",
 			slog.String("summary", summary),
 			slog.Any("attrs", attrs),
@@ -70,17 +68,18 @@ func GSlog(skipFns ...SkipLogFunc) gin.HandlerFunc {
 func buildRequestLogAttrs(
 	c *gin.Context,
 	status int,
-	method, path, raw string,
+	method, path, clientIp, fullPath string,
 	duration time.Duration,
 ) []slog.Attr {
+	query := c.Request.URL.Query()
 	attrs := []slog.Attr{
 		slog.Int("status", status),
 		slog.String("duration", duration.String()),
-		slog.String("ip", c.ClientIP()),
+		slog.String("ip", clientIp),
 		slog.String("method", method),
 		slog.String("path", path),
-		slog.String("query", raw),
-		slog.String("fullPath", constructPath(path, raw)),
+		slog.String("query", jsonutil.MustMarshalToString(&query)),
+		slog.String("fullPath", fullPath),
 		slog.Group(
 			"requestDuration",
 			slog.Int64("millis", duration.Milliseconds()),
@@ -106,4 +105,15 @@ func constructPath(path, raw string) string {
 		return path + "?" + raw
 	}
 	return path
+}
+
+func levelByStatus(status int) slog.Level {
+	switch {
+	case status >= 500:
+		return slog.LevelError
+	case status >= 400:
+		return slog.LevelWarn
+	default:
+		return slog.LevelInfo
+	}
 }
